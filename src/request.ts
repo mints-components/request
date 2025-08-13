@@ -20,6 +20,16 @@ instance.interceptors.request.use((config) => {
   return config;
 });
 
+instance.interceptors.response.use(
+  (r) => r,
+  (err) => {
+    if (axios.isAxiosError(err) && err.response?.status === 401) {
+      getGlobalRequestConfig().onUnauthorized?.();
+    }
+    return Promise.reject(err);
+  },
+);
+
 export const request = async <T = unknown>(
   path: string,
   config?: RequestConfig,
