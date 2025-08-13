@@ -2,7 +2,9 @@ import axios, { type AxiosRequestConfig, AxiosHeaders } from 'axios';
 
 import { getGlobalRequestConfig } from './config';
 
-export type RequestConfig = AxiosRequestConfig;
+export type RequestConfig = AxiosRequestConfig & {
+  skipUnauthorizedHandler?: boolean;
+};
 
 const instance = axios.create();
 
@@ -23,9 +25,17 @@ instance.interceptors.request.use((config) => {
 instance.interceptors.response.use(
   (r) => r,
   (err) => {
-    if (axios.isAxiosError(err) && err.response?.status === 401) {
+    if (!axios.isAxiosError(err)) {
+      return Promise.reject(err);
+    }
+
+    const status = err.response?.status;
+    const cfg = err.config as RequestConfig | undefined;
+
+    if (status === 401 && !cfg?.skipUnauthorizedHandler) {
       getGlobalRequestConfig().onUnauthorized?.();
     }
+
     return Promise.reject(err);
   },
 );
