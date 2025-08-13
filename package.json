@@ -1,6 +1,6 @@
 {
   "name": "@mints/request",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "type": "module",
   "description": "A lightweight Axios + operation wrapper with global config and toast integration",
   "main": "dist/index.cjs",
