@@ -22,6 +22,9 @@ instance.interceptors.request.use((config) => {
   return config;
 });
 
+let lastUnauthorizedAt = 0;
+const BATCH_WINDOW_MS = 1000;
+
 instance.interceptors.response.use(
   (r) => r,
   (err) => {
@@ -33,7 +36,11 @@ instance.interceptors.response.use(
     const cfg = err.config as RequestConfig | undefined;
 
     if (status === 401 && !cfg?.skipUnauthorizedHandler) {
-      getGlobalRequestConfig().onUnauthorized?.();
+      const now = Date.now();
+      if (now - lastUnauthorizedAt > BATCH_WINDOW_MS) {
+        getGlobalRequestConfig().onUnauthorized?.();
+        lastUnauthorizedAt = now;
+      }
     }
 
     return Promise.reject(err);
