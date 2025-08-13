@@ -108,6 +108,15 @@ type GlobalRequestConfig = {
 
 An enhanced version of Axios request that auto-injects baseURL and headers.
 
+```ts
+type RequestConfig = AxiosRequestConfig & {
+  /**
+   * Skip triggering the global onUnauthorized handler for this request.
+   */
+  skipUnauthorizedHandler?: boolean;
+};
+```
+
 ---
 
 ### `operator(fn: () => Promise<T>, config?: OperateConfig): Promise<[boolean, T?, unknown?]>`
