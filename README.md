@@ -10,7 +10,8 @@ Supports global config, toast integration, request context, and clean async oper
 - ✅ `operator()` helper for async request + loading + error feedback
 - ✅ Supports dynamic headers (e.g. token injection)
 - ✅ Optional `onUnauthorized()` global handler for 401
-- ✅ Minimal dependencies, framework agnostic
+- ✅ **React hook `useRequest`** for automatic requests with cancellation
+- ✅ Minimal dependencies, framework agnostic (core) + optional React add-on
 
 ---
 
@@ -50,7 +51,7 @@ setupRequest({
 
 ---
 
-## 🚀 Usage
+## 🚀 Usage (Core)
 
 ### 🔹 Basic `request`
 
@@ -83,6 +84,28 @@ const [ok, data] = await operator(() =>
 - Error catching and formatting
 
 ---
+
+## 🚀 Usage (React Add-on)
+
+### 🔹 `useRequest`
+
+Import from the React subpath:
+
+```tsx
+import { useRequest } from '@mints/request/react';
+import { request } from '@mints/request';
+
+function Example() {
+  const { loading, data, error } = useRequest(
+    (signal) => request('/users', { signal }),
+    [], // dependency list, re-run when values change
+  );
+
+  if (loading) return <span>Loading...</span>;
+  if (error) return <span>Failed: {String(error)}</span>;
+  return <pre>{JSON.stringify(data, null, 2)}</pre>;
+}
+```
 
 ## 🔧 API Reference
 
@@ -135,6 +158,23 @@ type OperateConfig = {
   };
 };
 ```
+
+### `useRequest` API
+
+```ts
+function useRequest<T>(
+  request: (signal: AbortSignal) => Promise<T>,
+  deps?: React.DependencyList,
+): {
+  loading: boolean;
+  data?: T;
+  error?: unknown;
+};
+```
+
+- **Auto run**: Executes immediately on mount and whenever deps change.
+- **Cancellation**: Cancels the previous request via AbortController before starting a new one.
+- **Return value**: A state object with `loading`, `data`, and `error`.
 
 ---
 

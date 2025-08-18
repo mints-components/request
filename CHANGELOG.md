@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.2.0] - 2025-08-18
+
+### ✨ New
+
+- Added React Hook: `useRequest` (import from `@mints/request/react`)
+  - Accepts a function `(signal: AbortSignal) => Promise<T>`
+  - Automatically runs on mount and whenever dependencies change
+  - Built-in `AbortController` cancels the previous request when a new one starts
+  - Returns a simple state object: `{ loading, data?, error? }`
+
+### 🛠 Build
+
+- Exposed `./react` subpath in `package.json#exports` with proper ESM/CJS and type declarations to fix “Missing './react' specifier” issues.
+
 ## [1.1.0] - 2025-08-13
 
 ### ✨ Enhancements
