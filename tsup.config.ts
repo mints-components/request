@@ -1,14 +1,17 @@
 import { defineConfig } from 'tsup';
 
 export default defineConfig({
-  entry: ['src/index.ts'],
+  entry: {
+    index: 'src/core/index.ts',
+    react: 'src/react/index.ts',
+  },
   format: ['cjs', 'esm'],
   dts: true,
   sourcemap: true,
   clean: true,
   outDir: 'dist',
   target: 'es2018',
-  external: ['axios'],
+  external: ['axios', 'react'],
   outExtension: (ctx) => ({
     js: ctx.format === 'cjs' ? '.cjs' : '.mjs',
   }),

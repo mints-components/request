@@ -12,6 +12,11 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.mjs",
       "require": "./dist/index.cjs"
+    },
+    "./react": {
+      "types": "./dist/react.d.ts",
+      "import": "./dist/react.mjs",
+      "require": "./dist/react.cjs"
     }
   },
   "files": [
@@ -57,14 +62,21 @@
     "url": "https://github.com/mints-components/request/issues"
   },
   "homepage": "https://github.com/mints-components/request#readme",
-  "dependencies": {
-    "axios": "^1.11.0"
-  },
   "peerDependencies": {
+    "axios": "^1.11.0",
+    "react": "^18"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    }
+  },
+  "dependencies": {
     "axios": "^1.11.0"
   },
   "devDependencies": {
     "@mints/eslint-config": "^2.2.0",
+    "@types/react": "^18.2.0",
     "eslint": "^9.32.0",
     "husky": "^9.1.7",
     "lint-staged": "^16.1.2",

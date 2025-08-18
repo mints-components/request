@@ -10,10 +10,7 @@
     "declaration": true,
     "emitDeclarationOnly": false,
     "outDir": "dist",
-    "baseUrl": ".",
-    "paths": {
-      "@mints/request": ["src"]
-    }
+    "baseUrl": "."
   },
   "include": ["src"],
   "exclude": ["dist", "node_modules"]
