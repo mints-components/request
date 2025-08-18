@@ -45,7 +45,7 @@
     "prettier": "prettier . --write",
     "prepublish": "yarn build",
     "publish": "yarn npm publish --access public",
-    "_postinstall": "husky install",
+    "postinstall": "husky install",
     "prepack": "pinst --disable",
     "postpack": "pinst --enable"
   },
