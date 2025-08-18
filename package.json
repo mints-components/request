@@ -1,5 +1,6 @@
 {
   "name": "@mints/request",
+  "packageManager": "yarn@4.9.2",
   "version": "1.1.0",
   "type": "module",
   "description": "A lightweight Axios + operation wrapper with global config and toast integration",
@@ -14,7 +15,8 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "CHANGELOG.md"
   ],
   "scripts": {
     "build": "tsup",
@@ -70,6 +72,5 @@
     "prettier": "^3.6.2",
     "tsup": "^7.2.0",
     "typescript": "^5.3.3"
-  },
-  "packageManager": "yarn@4.9.2"
+  }
 }
