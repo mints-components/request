@@ -4,6 +4,16 @@
   "version": "1.1.0",
   "type": "module",
   "description": "A lightweight Axios + operation wrapper with global config and toast integration",
+  "keywords": [
+    "axios",
+    "request",
+    "operator",
+    "toast",
+    "react",
+    "vite",
+    "http",
+    "utility"
+  ],
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
@@ -23,15 +33,21 @@
     "dist",
     "CHANGELOG.md"
   ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mints-components/request.git"
+  },
   "scripts": {
     "build": "tsup",
     "clean": "rm -rf dist",
     "lint": "eslint . --fix",
     "prettier": "prettier . --write",
-    "prepare": "husky install",
-    "prepublishOnly": "pinst --disable && yarn build",
-    "postpublish": "pinst --enable",
-    "publish": "yarn npm publish --access public"
+    "prepublish": "yarn build",
+    "publish": "yarn npm publish --access public",
+    "postinstall": "husky install",
+    "prepack": "pinst --disable",
+    "postpack": "pinst --enable"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [
@@ -42,26 +58,6 @@
       "prettier --write"
     ]
   },
-  "keywords": [
-    "axios",
-    "request",
-    "operator",
-    "toast",
-    "react",
-    "vite",
-    "http",
-    "utility"
-  ],
-  "author": "mintsweet",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/mints-components/request.git"
-  },
-  "bugs": {
-    "url": "https://github.com/mints-components/request/issues"
-  },
-  "homepage": "https://github.com/mints-components/request#readme",
   "peerDependencies": {
     "axios": "^1.11.0",
     "react": "^18"
