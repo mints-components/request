@@ -99,6 +99,7 @@ function Example() {
   const { loading, data, error } = useRequest(
     (signal) => request('/users', { signal }),
     [], // dependency list, re-run when values change
+    { name: 'XXX' }, // default data
   );
 
   if (loading) return <span>Loading...</span>;
@@ -165,6 +166,7 @@ type OperateConfig<E> = {
 function useRequest<T>(
   request: (signal: AbortSignal) => Promise<T>,
   deps?: React.DependencyList,
+  initialValue?: T,
 ): {
   loading: boolean;
   data?: T;
