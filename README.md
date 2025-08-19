@@ -142,15 +142,15 @@ type RequestConfig = AxiosRequestConfig & {
 
 ---
 
-### `operator(fn: () => Promise<T>, config?: OperateConfig): Promise<[boolean, T?, unknown?]>`
+### `operator<T,E>(fn: () => Promise<T>, config?: OperateConfig): Promise<[boolean, T?, E?]>`
 
 The best practice wrapper for async requests.
 
 ```ts
-type OperateConfig = {
+type OperateConfig<E> = {
   setOperating?: (running: boolean) => void;
   formatMessage?: () => string;
-  formatReason?: (err: unknown) => string;
+  formatReason?: (err: E) => string;
   hideToast?: boolean;
   toast?: {
     success?: (msg: string) => void;
@@ -202,8 +202,15 @@ updateRequestConfig({
 
 ```ts
 export const getUser = () => request('/user');
-export const createUser = (data: any) =>
-  operator(() => request('/user', { method: 'post', data }));
+export const createUser = (data: any) => {
+  const [success, res] = await operator(() =>
+    request('/user', { method: 'post', data }),
+  );
+
+  if (success) {
+    // do something
+  }
+};
 ```
 
 ---

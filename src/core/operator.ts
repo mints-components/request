@@ -1,66 +1,74 @@
-// operator.ts
-import type { AxiosError } from 'axios';
+import axios, { type AxiosError } from 'axios';
 
-import { getGlobalRequestConfig } from './config';
+import { getGlobalRequestConfig, type ToastFn } from './config';
 
-export type OperateConfig = {
-  setOperating?: (success: boolean) => void;
+export type OperateConfig<E> = {
+  setOperating?: (loading: boolean) => void;
   formatMessage?: () => string;
-  formatReason?: (err: unknown) => string;
+  formatReason?: (err: E) => string;
   hideToast?: boolean;
   toast?: {
-    success?: (msg: string) => void;
-    error?: (msg: string) => void;
+    success?: ToastFn;
+    error?: ToastFn;
   };
 };
 
-function isAxiosError(
-  error: unknown,
-): error is AxiosError<{ detail?: string }> {
-  return typeof error === 'object' && error !== null && 'isAxiosError' in error;
+type ApiErrorBody = {
+  message?: string;
+  error?: string;
+  detail?: string;
+  errors?: string | string[];
+};
+
+function extractAxiosMessage(err: AxiosError<ApiErrorBody>): string {
+  const data = err.response?.data;
+
+  if (typeof data === 'string') return data;
+
+  if (data && typeof data === 'object') {
+    const { message, error, detail, errors } = data;
+    const merged =
+      message ??
+      error ??
+      detail ??
+      (Array.isArray(errors) ? errors.join(', ') : errors);
+    if (merged) return merged;
+  }
+
+  return err.message || 'Unknown error';
 }
 
-export const operator = async <T>(
+export async function operator<T, E = unknown>(
   request: () => Promise<T>,
-  config?: OperateConfig,
-): Promise<[boolean, T?, unknown?]> => {
+  config: OperateConfig<E> = {},
+): Promise<[boolean, T?, E?]> {
+  const global = getGlobalRequestConfig();
   const {
     setOperating,
     formatMessage,
-    formatReason,
+    formatReason = (err: E) => {
+      if (axios.isAxiosError<ApiErrorBody>(err)) {
+        return extractAxiosMessage(err);
+      }
+      if (err instanceof Error) return err.message;
+      return String(err ?? 'Unknown error');
+    },
     hideToast,
     toast: localToast,
-  } = config || {};
-  const globalToast = getGlobalRequestConfig().toast;
+  } = config;
+
+  const toast = localToast ?? global.toast;
 
   try {
     setOperating?.(true);
     const res = await request();
-    const message = formatMessage?.() ?? 'Success!';
-    if (!hideToast) {
-      if (localToast?.success) localToast?.success?.(message);
-      else if (globalToast?.success) globalToast?.success?.(message);
-    }
+    if (!hideToast) toast?.success?.(formatMessage?.() ?? 'Success');
     return [true, res];
-  } catch (err: unknown) {
-    console.error('Failed!', err);
-
-    let reason = 'Failed!';
-    if (formatReason) {
-      reason = formatReason(err);
-    } else if (isAxiosError(err)) {
-      reason = err.response?.data?.detail ?? err.message ?? reason;
-    } else if (err instanceof Error) {
-      reason = err.message;
-    }
-
-    if (!hideToast) {
-      if (localToast?.error) localToast.error(reason);
-      else if (globalToast?.error) globalToast.error(reason);
-    }
-
-    return [false, undefined, err];
+  } catch (err) {
+    const typed = err as E;
+    if (!hideToast) toast?.error?.(formatReason(typed));
+    return [false, undefined, typed];
   } finally {
     setOperating?.(false);
   }
-};
+}
