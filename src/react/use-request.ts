@@ -10,28 +10,49 @@ export function useRequest<T, E>(
   const [loading, setLoading] = useState(false);
 
   const abortRef = useRef<AbortController | null>(null);
+  const mountedRef = useRef(true);
 
-  const run = useCallback(() => {
+  // Track mounted state to avoid state updates after unmount
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false;
+      abortRef.current?.abort();
+    };
+  }, []);
+
+  const run = useCallback(async () => {
     abortRef.current?.abort();
     const ctrl = new AbortController();
     abortRef.current = ctrl;
 
-    setLoading(true);
+    if (mountedRef.current) {
+      setLoading(true);
+      setError(null);
+    }
 
-    request(ctrl.signal)
-      .then((data) => {
-        if (!ctrl.signal.aborted) {
-          setData(data);
-        }
-      })
-      .catch((err) => {
-        if (!ctrl.signal.aborted) {
-          setError(err);
-        }
-      })
-      .finally(() => {
+    try {
+      const res = await request(ctrl.signal);
+
+      // Guard: do not update state if aborted or unmounted
+      if (!mountedRef.current || ctrl.signal.aborted) return res;
+
+      setData(res);
+      return res;
+    } catch (e) {
+      const isCanceled =
+        (e as { name: string })?.name === 'AbortError' ||
+        (e as { name: string })?.name === 'CanceledError' ||
+        (e as { code: string })?.code === 'ERR_CANCELED';
+
+      if (!isCanceled && mountedRef.current && !ctrl.signal.aborted) {
+        setError(e as E);
+      }
+      throw e;
+    } finally {
+      if (mountedRef.current && !ctrl.signal.aborted) {
         setLoading(false);
-      });
+      }
+    }
   }, deps);
 
   useEffect(() => {
