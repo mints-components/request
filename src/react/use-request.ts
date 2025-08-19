@@ -1,18 +1,13 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 
-export const useRequest = <T>(
+export function useRequest<T, E>(
   request: (signal: AbortSignal) => Promise<T>,
   deps: React.DependencyList = [],
   initialValue?: T,
-) => {
-  const [state, setState] = useState<{
-    loading: boolean;
-    data?: T;
-    error?: unknown;
-  }>({
-    loading: false,
-    data: initialValue,
-  });
+) {
+  const [data, setData] = useState<T | undefined>(initialValue);
+  const [error, setError] = useState<E | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const abortRef = useRef<AbortController | null>(null);
 
@@ -21,23 +16,22 @@ export const useRequest = <T>(
     const ctrl = new AbortController();
     abortRef.current = ctrl;
 
-    setState({ loading: true });
+    setLoading(true);
 
     request(ctrl.signal)
       .then((data) => {
         if (!ctrl.signal.aborted) {
-          setState({ loading: false, data });
+          setData(data);
         }
       })
       .catch((err) => {
         if (!ctrl.signal.aborted) {
-          setState({ loading: false, error: err });
+          setError(err);
         }
+      })
+      .finally(() => {
+        setLoading(false);
       });
-
-    return () => {
-      ctrl.abort();
-    };
   }, deps);
 
   useEffect(() => {
@@ -45,5 +39,5 @@ export const useRequest = <T>(
     return () => abortRef.current?.abort();
   }, [run]);
 
-  return state;
-};
+  return { data, error, loading, run, abort: () => abortRef.current?.abort() };
+}
