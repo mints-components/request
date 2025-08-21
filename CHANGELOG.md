@@ -1,5 +1,22 @@
 # Changelog
 
+## [2.0.0] - 2025-08-22
+
+### ✨ Features
+
+- Added **pluggable `AuthStrategy`** with cookie-based and token-based strategies
+- Added **default token storage** (`memoryStorage`, `localStorageStorage`)
+- Added **default token validation function**
+- Added `lazy` option for `useRequest` hook
+- Added `initialValue` for `useRequest`
+- Added default error type handling in `useRequest`
+- Added error type definition support in `operator`
+
+### 🛠 Refactors
+
+- Improved error filtering and mounted state tracking in `useRequest`
+- Remove `undefined` from `operator` return
+
 ## [1.2.0] - 2025-08-18
 
 ### ✨ New
