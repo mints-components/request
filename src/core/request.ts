@@ -133,10 +133,6 @@ instance.interceptors.response.use(
 // ---- public/auth helpers on top of base request() ----
 
 type CredentialsMode = 'auto' | 'always' | 'never';
-function computeWithCredentials(mode?: CredentialsMode): boolean {
-  if (!mode || mode === 'auto') return false;
-  return mode === 'always';
-}
 
 export type PublicOptions = { credentials?: CredentialsMode };
 export type AuthOptions = {
@@ -179,7 +175,7 @@ request.public = async function <T = unknown>(
   url: string,
   config?: AxiosRequestConfig & PublicOptions,
 ): Promise<T> {
-  const withCredentials = computeWithCredentials(config?.credentials);
+  const withCredentials = config?.credentials === 'always' ? true : undefined;
   return baseRequest<T>(url, {
     ...config,
     withCredentials,
@@ -196,7 +192,7 @@ request.auth = async function <T = unknown>(
   url: string,
   config?: AxiosRequestConfig & AuthOptions,
 ): Promise<T> {
-  const withCredentials = computeWithCredentials(config?.credentials);
+  const withCredentials = config?.credentials === 'always' ? true : undefined;
   return baseRequest<T>(url, {
     ...config,
     withCredentials,
