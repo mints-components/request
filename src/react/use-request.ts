@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 
-export function useRequest<T, E>(
+export function useRequest<T, E = unknown>(
   request: (signal: AbortSignal) => Promise<T>,
   deps: React.DependencyList = [],
   initialValue?: T,
