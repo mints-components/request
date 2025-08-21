@@ -41,7 +41,7 @@ function extractAxiosMessage(err: AxiosError<ApiErrorBody>): string {
 export async function operator<T, E = unknown>(
   request: () => Promise<T>,
   config: OperateConfig<E> = {},
-): Promise<[boolean, T?, E?]> {
+): Promise<[true, T?] | [false, E?]> {
   const global = getGlobalRequestConfig();
   const {
     setOperating,
@@ -67,7 +67,7 @@ export async function operator<T, E = unknown>(
   } catch (err) {
     const typed = err as E;
     if (!hideToast) toast?.error?.(formatReason(typed));
-    return [false, undefined, typed];
+    return [false, typed];
   } finally {
     setOperating?.(false);
   }
