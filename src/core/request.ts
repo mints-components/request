@@ -78,7 +78,9 @@ function shouldAttemptRefresh(error: AxiosError): boolean {
   return typeof status === 'number' && !!shouldRefreshOnStatus?.(status);
 }
 
-async function retryOnce<T>(original: InternalAxiosRequestConfig): Promise<T> {
+async function retryOnce<T>(
+  original: InternalAxiosRequestConfig,
+): Promise<AxiosResponse<T>> {
   const global = getGlobalRequestConfig();
   const retryMax = Math.max(1, global.retryAfterRefresh ?? 1);
 
@@ -90,8 +92,7 @@ async function retryOnce<T>(original: InternalAxiosRequestConfig): Promise<T> {
   }
 
   meta._retried = count + 1;
-  const res = await instance.request<T>(original);
-  return res.data as T;
+  return instance.request<T>(original);
 }
 
 // ---- response interceptor: 401 -> refresh -> retry ----
@@ -117,17 +118,8 @@ instance.interceptors.response.use(
 
     try {
       await ensureRefreshed(cfg.signal as AbortSignal | undefined);
-      const data = await retryOnce(cfg);
-      // Recreate an AxiosResponse for interceptor chain
-      const response: AxiosResponse = {
-        data,
-        status: 200,
-        statusText: 'OK',
-        headers: {},
-        config: cfg,
-        request: {},
-      };
-      return response;
+      const retried = await retryOnce(cfg);
+      return retried;
     } catch (refreshErr) {
       global.auth.onRefreshFailed?.(refreshErr);
       if (!cfg.meta?.skipUnauthorizedHandler) {
