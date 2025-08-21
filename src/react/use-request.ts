@@ -4,6 +4,7 @@ export function useRequest<T, E = unknown>(
   request: (signal: AbortSignal) => Promise<T>,
   deps: React.DependencyList = [],
   initialValue?: T,
+  opts?: { lazy?: boolean },
 ) {
   const [data, setData] = useState<T | undefined>(initialValue);
   const [error, setError] = useState<E | null>(null);
@@ -56,8 +57,10 @@ export function useRequest<T, E = unknown>(
   }, deps);
 
   useEffect(() => {
-    run();
-    return () => abortRef.current?.abort();
+    if (!opts?.lazy) {
+      run();
+      return () => abortRef.current?.abort();
+    }
   }, [run]);
 
   return { data, error, loading, run, abort: () => abortRef.current?.abort() };
