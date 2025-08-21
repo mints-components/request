@@ -1,12 +1,13 @@
 # @mints/request
 
-A lightweight HTTP and operation wrapper built on Axios for React/Vite projects.  
+A lightweight HTTP and operation wrapper built on Axios for React/Vite projects.
 Supports pluggable authentication strategies, global config, toast integration, request retry after refresh, and clean async operation management.
 
 ## ✨ Features
 
 - ✅ Simple Axios wrapper with unified config
 - ✅ **Pluggable `AuthStrategy`** (cookie-based / token-based)
+- ✅ Built-in **token storage** (`memory` / `localStorage`)
 - ✅ Automatic **refresh + retry** on expired access tokens
 - ✅ Global `toast` integration (decoupled from UI)
 - ✅ `operator()` helper for async request + loading + error feedback
@@ -42,11 +43,6 @@ setupRequest({
     error: toast.error,
   },
   auth: createCookieStrategy({
-    getAccessToken: () => localStorage.getItem('access_token'),
-    setAccessToken: (t) =>
-      t
-        ? localStorage.setItem('access_token', t)
-        : localStorage.removeItem('access_token'),
     refreshPath: '/auth/refresh',
   }),
   onUnauthorized: () => {
@@ -54,6 +50,9 @@ setupRequest({
   },
 });
 ```
+
+- By default `createCookieStrategy` stores `access_token` in memory (`memoryStorage`).
+- You can pass a custom `storage` (e.g. `localStorageStorage`) if persistence is needed.
 
 ---
 
@@ -171,9 +170,11 @@ import { createCookieStrategy, createTokenStrategy } from '@mints/request';
 // Cookie-based (refresh via httpOnly cookie)
 createCookieStrategy({ ... });
 
-// Token-exchange (refresh via refresh_token in JS)
+// Token-exchange (refresh via refresh_token in JS, stored in localStorage by default)
 createTokenStrategy({ ... });
 ```
+
+Both accept an optional `storage` parameter (`memoryStorage`, `localStorageStorage`, or custom).
 
 ---
 
@@ -197,11 +198,11 @@ function useRequest<T, E>(
 
 ## 🛡️ Best Practices
 
-- Use `request.public` for endpoints that don’t require auth.
+- Use `request.public` for endpoints that don't require auth.
 - Use `request.auth` for APIs with tokens; retries are automatic.
-- For cookie-based sessions: `credentials: 'always'` if your backend requires `withCredentials`.
+- For cookie-based sessions: set `credentials: 'always'` if your backend requires `withCredentials`.
 - Handle `onUnauthorized` globally (redirect, logout).
-- Keep refresh handling inside the provided strategies (don’t duplicate in your app code).
+- Keep refresh handling inside the provided strategies (don't duplicate in your app code).
 
 ---
 
