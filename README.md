@@ -1,15 +1,16 @@
 # @mints/request
 
 A lightweight HTTP and operation wrapper built on Axios for React/Vite projects.  
-Supports global config, toast integration, request context, and clean async operation management.
+Supports pluggable authentication strategies, global config, toast integration, request retry after refresh, and clean async operation management.
 
 ## ✨ Features
 
 - ✅ Simple Axios wrapper with unified config
+- ✅ **Pluggable `AuthStrategy`** (cookie-based / token-based)
+- ✅ Automatic **refresh + retry** on expired access tokens
 - ✅ Global `toast` integration (decoupled from UI)
 - ✅ `operator()` helper for async request + loading + error feedback
-- ✅ Supports dynamic headers (e.g. token injection)
-- ✅ Optional `onUnauthorized()` global handler for 401
+- ✅ Fine-grained per-request toggles (`skipAuth`, `skipRefresh`, `skipUnauthorizedHandler`)
 - ✅ **React hook `useRequest`** for automatic requests with cancellation
 - ✅ Minimal dependencies, framework agnostic (core) + optional React add-on
 
@@ -31,18 +32,23 @@ Call `setupRequest()` once before using `request` or `operator` (e.g. in `src/se
 
 ```ts
 // setup.ts
-import { setupRequest } from '@mints/request';
+import { setupRequest, createCookieStrategy } from '@mints/request';
 import { toast } from '@mints/ui'; // your own toast system
 
 setupRequest({
   baseURL: '/api',
-  defaultHeaders: () => ({
-    Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
-  }),
   toast: {
     success: toast.success,
     error: toast.error,
   },
+  auth: createCookieStrategy({
+    getAccessToken: () => localStorage.getItem('access_token'),
+    setAccessToken: (t) =>
+      t
+        ? localStorage.setItem('access_token', t)
+        : localStorage.removeItem('access_token'),
+    refreshPath: '/auth/refresh',
+  }),
   onUnauthorized: () => {
     window.location.href = '/login';
   },
@@ -58,12 +64,15 @@ setupRequest({
 ```ts
 import { request } from '@mints/request';
 
-const data = await request('/users');
-const user = await request('/users/1', {
-  method: 'put',
-  data: { name: 'Tom' },
-});
+// Defaults to request.public
+const users = await request('/users');
+
+// Authenticated API
+const me = await request.auth('/me');
 ```
+
+- `request.public(url, config)` → no auth, no refresh, safe for public endpoints.
+- `request.auth(url, config)` → includes auth, retries after refresh if needed.
 
 ---
 
@@ -72,16 +81,10 @@ const user = await request('/users/1', {
 ```ts
 import { operator, request } from '@mints/request';
 
-const [ok, data] = await operator(() =>
-  request('/users', { params: { q: 'admin' } }),
+const [ok, data, err] = await operator(() =>
+  request.auth('/users', { params: { q: 'admin' } }),
 );
 ```
-
-`operator()` automatically supports:
-
-- Loading state management (via optional `setOperating`)
-- Success/failure toast
-- Error catching and formatting
 
 ---
 
@@ -89,17 +92,15 @@ const [ok, data] = await operator(() =>
 
 ### 🔹 `useRequest`
 
-Import from the React subpath:
-
 ```tsx
 import { useRequest } from '@mints/request/react';
 import { request } from '@mints/request';
 
 function Example() {
   const { loading, data, error } = useRequest(
-    (signal) => request('/users', { signal }),
-    [], // dependency list, re-run when values change
-    { name: 'XXX' }, // default data
+    (signal) => request.auth('/users', { signal }),
+    [], // deps
+    { name: 'fallback' }, // optional initial value
   );
 
   if (loading) return <span>Loading...</span>;
@@ -107,6 +108,8 @@ function Example() {
   return <pre>{JSON.stringify(data, null, 2)}</pre>;
 }
 ```
+
+---
 
 ## 🔧 API Reference
 
@@ -123,97 +126,82 @@ type GlobalRequestConfig = {
     error?: (msg: string) => void;
   };
   onUnauthorized?: () => void;
+
+  // Authentication
+  auth?: AuthStrategy;
+  retryAfterRefresh?: number; // default 1
+  shouldRefreshOnStatus?: (status: number) => boolean; // default: 401
 };
 ```
 
 ---
 
-### `request(path: string, config?: AxiosRequestConfig): Promise<any>`
-
-An enhanced version of Axios request that auto-injects baseURL and headers.
+### `request`
 
 ```ts
-type RequestConfig = AxiosRequestConfig & {
-  /**
-   * Skip triggering the global onUnauthorized handler for this request.
-   */
-  skipUnauthorizedHandler?: boolean;
-};
+// Callable
+const data = await request('/path');
+
+// With modes
+await request.public('/path', { credentials: 'never' });
+await request.auth('/secure', { noRefresh: true });
+```
+
+- `skipAuth`, `skipRefresh`, `skipUnauthorizedHandler` available in `config.meta`.
+
+---
+
+### `operator<T,E>(fn, config)`
+
+```ts
+const [ok, data, err] = await operator(() => request.auth('/api'), {
+  setOperating: setLoading,
+});
 ```
 
 ---
 
-### `operator<T,E>(fn: () => Promise<T>, config?: OperateConfig): Promise<[boolean, T?, E?]>`
+### `AuthStrategy`
 
-The best practice wrapper for async requests.
+Two built-in strategies:
 
 ```ts
-type OperateConfig<E> = {
-  setOperating?: (running: boolean) => void;
-  formatMessage?: () => string;
-  formatReason?: (err: E) => string;
-  hideToast?: boolean;
-  toast?: {
-    success?: (msg: string) => void;
-    error?: (msg: string) => void;
-  };
-};
+import { createCookieStrategy, createTokenStrategy } from '@mints/request';
+
+// Cookie-based (refresh via httpOnly cookie)
+createCookieStrategy({ ... });
+
+// Token-exchange (refresh via refresh_token in JS)
+createTokenStrategy({ ... });
 ```
 
-### `useRequest` API
+---
+
+### `useRequest`
 
 ```ts
-function useRequest<T>(
+function useRequest<T, E>(
   request: (signal: AbortSignal) => Promise<T>,
   deps?: React.DependencyList,
   initialValue?: T,
 ): {
   loading: boolean;
   data?: T;
-  error?: unknown;
+  error: E | null;
+  run: () => Promise<T>;
+  abort: () => void;
 };
-```
-
-- **Auto run**: Executes immediately on mount and whenever deps change.
-- **Cancellation**: Cancels the previous request via AbortController before starting a new one.
-- **Return value**: A state object with `loading`, `data`, and `error`.
-
----
-
-## 🧩 Advanced
-
-### 🔁 Dynamically update config
-
-```ts
-import { updateRequestConfig } from '@mints/request';
-
-updateRequestConfig({
-  defaultHeaders: () => ({
-    Authorization: `Bearer ${newToken}`,
-  }),
-});
 ```
 
 ---
 
 ## 🛡️ Best Practices
 
-- Call `setupRequest` once in your app entry (e.g. `main.tsx`, `setup.ts`).
-- Integrate with your UI toast system globally (e.g. from @mints/ui).
-- Wrap frequent API calls like this:
-
-```ts
-export const getUser = () => request('/user');
-export const createUser = (data: any) => {
-  const [success, res] = await operator(() =>
-    request('/user', { method: 'post', data }),
-  );
-
-  if (success) {
-    // do something
-  }
-};
-```
+- Use `request.public` for endpoints that don’t require auth.
+- Use `request.auth` for APIs with tokens; retries are automatic.
+- For cookie-based sessions: `credentials: 'always'` if your backend requires `withCredentials`.
+- Handle `onUnauthorized` globally (redirect, logout).
+- Keep refresh handling inside the provided strategies (don’t duplicate in your app code).
 
 ---
 
