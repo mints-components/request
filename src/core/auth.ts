@@ -1,6 +1,24 @@
 import { AxiosHeaders, type AxiosRequestConfig } from 'axios';
 
 import type { AuthStrategy } from './config';
+import {
+  memoryStorage,
+  localStorageStorage,
+  type TokenStorage,
+} from './storage';
+
+function addAuthHeader<T extends AxiosRequestConfig>(
+  config: T,
+  token: string | null,
+): T {
+  if (token) {
+    config.headers = AxiosHeaders.from({
+      ...(config.headers || {}),
+      Authorization: `Bearer ${token}`,
+    });
+  }
+  return config;
+}
 
 /**
  * Cookie-based strategy:
@@ -8,21 +26,15 @@ import type { AuthStrategy } from './config';
  * - Refresh relies on http-only cookie via a server endpoint.
  */
 export function createCookieStrategy(opts: {
-  getAccessToken: () => string | null;
-  setAccessToken: (t: string | null) => void;
+  storage?: TokenStorage;
   refreshPath: string; // e.g., '/auth/refresh'
   isTokenValid?: () => boolean;
 }): AuthStrategy {
+  const storage = opts.storage ?? memoryStorage;
+
   return {
     addAuthToRequest<T extends AxiosRequestConfig>(config: T): T {
-      const token = opts.getAccessToken();
-      if (token) {
-        config.headers = AxiosHeaders.from({
-          ...(config.headers || {}),
-          Authorization: `Bearer ${token}`,
-        });
-      }
-      return config;
+      return addAuthHeader(config, storage.getAccessToken());
     },
     isAccessTokenValid: opts.isTokenValid,
     async refresh(signal?: AbortSignal) {
@@ -30,7 +42,6 @@ export function createCookieStrategy(opts: {
         method: 'POST',
         credentials: 'include',
         headers: {
-          'Content-Type': 'application/json',
           Accept: 'application/json',
         },
         signal,
@@ -39,14 +50,14 @@ export function createCookieStrategy(opts: {
       try {
         const json = await res.json();
         if (json?.access_token) {
-          opts.setAccessToken(json.access_token);
+          storage.setAccessToken(json.access_token);
         }
       } catch {
         // Some backends may not return JSON; cookie-only session is fine.
       }
     },
     onRefreshFailed(reason) {
-      opts.setAccessToken(null);
+      storage.setAccessToken(null);
       console.warn('Refresh failed', reason);
     },
   };
@@ -57,27 +68,19 @@ export function createCookieStrategy(opts: {
  * - Both access and refresh tokens are readable by JS (NOT http-only).
  */
 export function createTokenStrategy(opts: {
-  getAccessToken: () => string | null;
-  setAccessToken: (t: string | null) => void;
-  getRefreshToken: () => string | null;
-  setRefreshToken: (t: string | null) => void;
+  storage?: TokenStorage;
   refreshPath: string;
   isTokenValid?: () => boolean;
 }): AuthStrategy {
+  const storage = opts.storage ?? localStorageStorage;
+
   return {
     addAuthToRequest<T extends AxiosRequestConfig>(config: T): T {
-      const token = opts.getAccessToken();
-      if (token) {
-        config.headers = AxiosHeaders.from({
-          ...(config.headers || {}),
-          Authorization: `Bearer ${token}`,
-        });
-      }
-      return config;
+      return addAuthHeader(config, storage.getAccessToken());
     },
     isAccessTokenValid: opts.isTokenValid,
     async refresh(signal?: AbortSignal) {
-      const rt = opts.getRefreshToken();
+      const rt = storage.getRefreshToken?.();
       if (!rt) throw new Error('No refresh token');
       const res = await fetch(opts.refreshPath, {
         method: 'POST',
@@ -91,12 +94,12 @@ export function createTokenStrategy(opts: {
       if (!res.ok) throw new Error(`Refresh failed: ${res.status}`);
       const json = await res.json();
       if (!json?.access_token) throw new Error('Malformed refresh response');
-      opts.setAccessToken(json.access_token);
-      if (json.refresh_token) opts.setRefreshToken(json.refresh_token);
+      storage.setAccessToken(json.access_token);
+      if (json.refresh_token) storage.setRefreshToken?.(json.refresh_token);
     },
     onRefreshFailed(reason) {
-      opts.setAccessToken(null);
-      opts.setRefreshToken(null);
+      storage.setAccessToken(null);
+      storage.setRefreshToken?.(null);
       console.warn('Refresh failed', reason);
     },
   };
