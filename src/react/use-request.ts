@@ -49,8 +49,9 @@ export function useRequest<T, E = unknown>(
 
       if (!isCanceled && mountedRef.current && !ctrl.signal.aborted) {
         setError(e as E);
+        throw e;
       }
-      throw e;
+      return undefined as unknown as T;
     } finally {
       if (mountedRef.current && !ctrl.signal.aborted) {
         setLoading(false);
