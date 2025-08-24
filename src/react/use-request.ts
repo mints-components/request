@@ -15,6 +15,8 @@ export function useRequest<T, E = unknown>(
 
   // Track mounted state to avoid state updates after unmount
   useEffect(() => {
+    mountedRef.current = true;
+
     return () => {
       mountedRef.current = false;
       abortRef.current?.abort();
