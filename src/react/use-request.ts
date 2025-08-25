@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 
+type Status = 'idle' | 'loading' | 'success' | 'error';
+
 export function useRequest<T, E = unknown>(
   request: (signal: AbortSignal) => Promise<T>,
   deps: React.DependencyList = [],
@@ -8,7 +10,9 @@ export function useRequest<T, E = unknown>(
 ) {
   const [data, setData] = useState<T | undefined>(initialValue);
   const [error, setError] = useState<E | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [status, setStatus] = useState<Status>(
+    opts?.lazy ? 'idle' : initialValue === undefined ? 'loading' : 'idle',
+  );
 
   const abortRef = useRef<AbortController | null>(null);
   const mountedRef = useRef(true);
@@ -29,33 +33,39 @@ export function useRequest<T, E = unknown>(
     abortRef.current = ctrl;
 
     if (mountedRef.current) {
-      setLoading(true);
+      setStatus('loading');
       setError(null);
     }
 
     try {
       const res = await request(ctrl.signal);
 
-      // Guard: do not update state if aborted or unmounted
-      if (!mountedRef.current || ctrl.signal.aborted) return res;
+      // stale or canceled -> do not write
+      const isStale =
+        !mountedRef.current || ctrl.signal.aborted || abortRef.current !== ctrl;
+      if (isStale) return res;
 
       setData(res);
+      setStatus('success');
       return res;
     } catch (e) {
       const isCanceled =
-        (e as { name: string })?.name === 'AbortError' ||
-        (e as { name: string })?.name === 'CanceledError' ||
-        (e as { code: string })?.code === 'ERR_CANCELED';
+        (e as { name?: string })?.name === 'AbortError' ||
+        (e as { name?: string })?.name === 'CanceledError' ||
+        (e as { code?: string })?.code === 'ERR_CANCELED';
 
-      if (!isCanceled && mountedRef.current && !ctrl.signal.aborted) {
-        setError(e as E);
-        throw e;
+      const isStale =
+        !mountedRef.current || ctrl.signal.aborted || abortRef.current !== ctrl;
+
+      if (isCanceled || isStale) {
+        // swallow cancellations/stale completions; keep current status
+        return undefined as unknown as T;
       }
-      return undefined as unknown as T;
-    } finally {
-      if (mountedRef.current && !ctrl.signal.aborted) {
-        setLoading(false);
-      }
+
+      // real error (current generation)
+      setError(e as E);
+      setStatus('error');
+      throw e;
     }
   }, deps);
 
@@ -66,5 +76,11 @@ export function useRequest<T, E = unknown>(
     }
   }, [run]);
 
-  return { data, error, loading, run, abort: () => abortRef.current?.abort() };
+  return {
+    data,
+    error,
+    loading: status === 'loading',
+    run,
+    abort: () => abortRef.current?.abort(),
+  };
 }
