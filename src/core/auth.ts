@@ -27,9 +27,11 @@ function addAuthHeader<T extends AxiosRequestConfig>(
  */
 export function createCookieStrategy(opts: {
   storage?: TokenStorage;
+  tokenField?: string; // default: "access_token"
   refreshPath: string; // e.g., '/auth/refresh'
 }): AuthStrategy {
   const storage = opts.storage ?? memoryStorage;
+  const accessKey = opts?.tokenField ?? 'access_token';
 
   return {
     addAuthToRequest<T extends AxiosRequestConfig>(config: T): T {
@@ -47,8 +49,8 @@ export function createCookieStrategy(opts: {
       if (!res.ok) throw new Error(`Refresh failed: ${res.status}`);
       try {
         const json = await res.json();
-        if (json?.access_token) {
-          storage.setAccessToken(json.access_token);
+        if (json?.[accessKey]) {
+          storage.setAccessToken(json[accessKey]);
         }
       } catch {
         // Some backends may not return JSON; cookie-only session is fine.
@@ -67,9 +69,11 @@ export function createCookieStrategy(opts: {
  */
 export function createTokenStrategy(opts: {
   storage?: TokenStorage;
+  tokenField?: string; // default: "access_token"
   refreshPath: string;
 }): AuthStrategy {
   const storage = opts.storage ?? localStorageStorage;
+  const accessKey = opts?.tokenField ?? 'access_token';
 
   return {
     addAuthToRequest<T extends AxiosRequestConfig>(config: T): T {
@@ -89,8 +93,8 @@ export function createTokenStrategy(opts: {
       });
       if (!res.ok) throw new Error(`Refresh failed: ${res.status}`);
       const json = await res.json();
-      if (!json?.access_token) throw new Error('Malformed refresh response');
-      storage.setAccessToken(json.access_token);
+      if (!json?.[accessKey]) throw new Error('Malformed refresh response');
+      storage.setAccessToken(json[accessKey]);
       if (json.refresh_token) storage.setRefreshToken?.(json.refresh_token);
     },
     onRefreshFailed(reason) {
