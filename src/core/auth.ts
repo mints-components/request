@@ -20,17 +20,6 @@ function addAuthHeader<T extends AxiosRequestConfig>(
   return config;
 }
 
-function isJwtValid(t: string | null, leewaySec = 30) {
-  if (!t) return false;
-  const [, payload] = t.split('.');
-  try {
-    const { exp } = JSON.parse(atob(payload));
-    return typeof exp === 'number' && Date.now() / 1000 < exp - leewaySec;
-  } catch {
-    return false;
-  }
-}
-
 /**
  * Cookie-based strategy:
  * - Access token lives in app state (memory/storage).
@@ -47,8 +36,6 @@ export function createCookieStrategy(opts: {
     addAuthToRequest<T extends AxiosRequestConfig>(config: T): T {
       return addAuthHeader(config, storage.getAccessToken());
     },
-    isAccessTokenValid:
-      opts.isTokenValid ?? (() => isJwtValid(storage.getAccessToken())),
     async refresh(signal?: AbortSignal) {
       const res = await fetch(opts.refreshPath, {
         method: 'POST',
@@ -90,8 +77,6 @@ export function createTokenStrategy(opts: {
     addAuthToRequest<T extends AxiosRequestConfig>(config: T): T {
       return addAuthHeader(config, storage.getAccessToken());
     },
-    isAccessTokenValid:
-      opts.isTokenValid ?? (() => isJwtValid(storage.getAccessToken())),
     async refresh(signal?: AbortSignal) {
       const rt = storage.getRefreshToken?.();
       if (!rt) throw new Error('No refresh token');

@@ -107,12 +107,6 @@ instance.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    // Optional proactive validity check (if provided)
-    if (global.auth.isAccessTokenValid?.()) {
-      // Token claims still "valid" but server says unauthorized -> bubble up
-      return Promise.reject(error);
-    }
-
     try {
       await ensureRefreshed(cfg.signal as AbortSignal | undefined);
       const retried = await retryOnce(cfg);

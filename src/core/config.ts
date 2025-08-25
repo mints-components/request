@@ -8,9 +8,6 @@ export interface AuthStrategy {
     config: T,
   ) => T;
 
-  /** Optional: return true if access token is still valid */
-  isAccessTokenValid?: () => boolean;
-
   /** Refresh credentials; may rely on http-only cookie or token exchange */
   refresh: (signal?: AbortSignal) => Promise<void>;
 
