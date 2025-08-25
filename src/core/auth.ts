@@ -56,9 +56,13 @@ export function createCookieStrategy(opts: {
         // Some backends may not return JSON; cookie-only session is fine.
       }
     },
-    onRefreshFailed(reason) {
+    setToken({ accessToken, refreshToken }) {
+      if (accessToken) storage.setAccessToken(accessToken);
+      if (refreshToken) storage.setRefreshToken?.(refreshToken);
+    },
+    clearToken() {
       storage.setAccessToken(null);
-      console.warn('Refresh failed', reason);
+      storage.setRefreshToken?.(null);
     },
   };
 }
@@ -97,10 +101,13 @@ export function createTokenStrategy(opts: {
       storage.setAccessToken(json[accessKey]);
       if (json.refresh_token) storage.setRefreshToken?.(json.refresh_token);
     },
-    onRefreshFailed(reason) {
+    setToken({ accessToken, refreshToken }) {
+      if (accessToken) storage.setAccessToken(accessToken);
+      if (refreshToken) storage.setRefreshToken?.(refreshToken);
+    },
+    clearToken() {
       storage.setAccessToken(null);
       storage.setRefreshToken?.(null);
-      console.warn('Refresh failed', reason);
     },
   };
 }

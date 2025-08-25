@@ -13,6 +13,12 @@ export interface AuthStrategy {
 
   /** Optional: called when refresh ultimately fails */
   onRefreshFailed?: (reason: unknown) => void;
+
+  /** Optional: persist tokens to local storage or app state */
+  setToken?: (json: { accessToken?: string; refreshToken?: string }) => void;
+
+  /** Optional: clear local credentials */
+  clearToken?: () => void;
 }
 
 export interface GlobalRequestConfig {
