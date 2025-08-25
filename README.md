@@ -13,6 +13,7 @@ Supports pluggable authentication strategies, global config, toast integration, 
 - ✅ `operator()` helper for async request + loading + error feedback
 - ✅ Fine-grained per-request toggles (`skipAuth`, `skipRefresh`, `skipUnauthorizedHandler`)
 - ✅ **React hook `useRequest`** for automatic requests with cancellation
+- ✅ Helper functions `login` / `logout` for auto token management
 - ✅ Minimal dependencies, framework agnostic (core) + optional React add-on
 
 ---
@@ -44,6 +45,7 @@ setupRequest({
   },
   auth: createCookieStrategy({
     refreshPath: '/auth/refresh',
+    tokenField: 'jwt', // default: "access_token"
   }),
   onUnauthorized: () => {
     window.location.href = '/login';
@@ -51,8 +53,9 @@ setupRequest({
 });
 ```
 
-- By default `createCookieStrategy` stores `access_token` in memory (`memoryStorage`).
+- By default `createCookieStrategy` stores `token` in memory (`memoryStorage`).
 - You can pass a custom `storage` (e.g. `localStorageStorage`) if persistence is needed.
+- Default refresh status codes: `401, 419, 440`.
 
 ---
 
@@ -65,6 +68,8 @@ import { request } from '@mints/request';
 
 // Defaults to request.public
 const users = await request('/users');
+// or
+const users = await request.public('/users');
 
 // Authenticated API
 const me = await request.auth('/me');
@@ -72,6 +77,8 @@ const me = await request.auth('/me');
 
 - `request.public(url, config)` → no auth, no refresh, safe for public endpoints.
 - `request.auth(url, config)` → includes auth, retries after refresh if needed.
+- `request.init(url, { soft?: boolean })` → probe request, optional `soft=true` skips refresh.
+- `request.reset(url)` → reset probe state.
 
 ---
 
@@ -83,6 +90,17 @@ import { operator, request } from '@mints/request';
 const [ok, data, err] = await operator(() =>
   request.auth('/users', { params: { q: 'admin' } }),
 );
+```
+
+---
+
+### 🔹 Token management helpers
+
+```ts
+import { login, logout } from '@mints/request/auth';
+
+await login(() => API.auth.login(form));
+await logout(() => API.auth.logout());
 ```
 
 ---
@@ -129,7 +147,7 @@ type GlobalRequestConfig = {
   // Authentication
   auth?: AuthStrategy;
   retryAfterRefresh?: number; // default 1
-  shouldRefreshOnStatus?: (status: number) => boolean; // default: 401
+  shouldRefreshOnStatus?: (status: number) => boolean; // default: 401, 419, 440
 };
 ```
 
@@ -198,6 +216,7 @@ function useRequest<T, E>(
 
 ## 🛡️ Best Practices
 
+- Use `request.init` for probe token
 - Use `request.public` for endpoints that don't require auth.
 - Use `request.auth` for APIs with tokens; retries are automatic.
 - For cookie-based sessions: set `credentials: 'always'` if your backend requires `withCredentials`.
