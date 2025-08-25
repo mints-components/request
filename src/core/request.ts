@@ -160,6 +160,11 @@ const request = ((url: string, config?: AxiosRequestConfig) => {
     url: string,
     config?: AxiosRequestConfig & AuthOptions,
   ) => Promise<T>;
+  init: <T = unknown>(
+    url: string,
+    config?: AxiosRequestConfig,
+  ) => Promise<T | null>;
+  reset: () => void;
 };
 
 request.public = async function <T = unknown>(
@@ -192,6 +197,49 @@ request.auth = async function <T = unknown>(
       ...(config?.noRefresh ? { skipRefresh: true } : {}),
     },
   });
+};
+
+let didInitSoftRefresh = false;
+
+async function probe<T>(
+  url: string,
+  config?: AxiosRequestConfig,
+): Promise<T | null> {
+  return request.auth<T>(url, {
+    ...config,
+    noRefresh: true,
+    meta: {
+      ...(config?.meta || {}),
+      skipUnauthorizedHandler: true,
+    },
+  });
+}
+
+request.init = async function <T = unknown>(
+  url: string,
+  config?: AxiosRequestConfig & { soft?: boolean },
+): Promise<T | null> {
+  try {
+    return await probe<T>(url, config);
+  } catch {
+    const soft = config?.soft ?? true; // default: allow one soft refresh this load
+    if (!soft || didInitSoftRefresh) return null;
+
+    const auth = getGlobalRequestConfig().auth;
+    if (!auth) return null;
+
+    try {
+      await auth.refresh(config?.signal as AbortSignal | undefined);
+      didInitSoftRefresh = true;
+      return await probe<T>(url, config);
+    } catch {
+      return null;
+    }
+  }
+};
+
+request.reset = function () {
+  didInitSoftRefresh = false;
 };
 
 export { request };
