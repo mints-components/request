@@ -1,5 +1,29 @@
 # Changelog
 
+## [2.1.0] - 2025-08-25
+
+⚠️ **Note:** version `2.0.0` was essentially broken due to severe bugs.  
+Upgrade to `2.1.0` immediately.
+
+### ✨ Features
+
+- Added `login()` and `logout()` helpers to manage tokens automatically.
+- Added `init()` and `reset()` methods to `request` for probe/reset flows.
+- Added `tokenField` option in `createCookieStrategy` and `createTokenStrategy`.
+- Added default handling for HTTP `419` / `440`.
+
+### 🐛 Fixes
+
+- Fixed missing `storage` export.
+- Fixed infinite loop in `ensureRefreshed` (refresh never exited).
+- Fixed `mountedRef.current` not reset (broke `useRequest` under React Strict Mode).
+
+### 🛠 Refactors
+
+- Removed `isAccessTokenValid` param from `AuthStrategy` (backend decides validity).
+- Removed `useRequest` throwing on cancellation errors (`AbortError`, `ERR_CANCELED`, `CanceledError`).
+- Internally refactored `useRequest` to rely on `status` instead of `loading`.
+
 ## [2.0.0] - 2025-08-22
 
 ### ✨ Features
