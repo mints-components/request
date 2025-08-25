@@ -28,7 +28,6 @@ function addAuthHeader<T extends AxiosRequestConfig>(
 export function createCookieStrategy(opts: {
   storage?: TokenStorage;
   refreshPath: string; // e.g., '/auth/refresh'
-  isTokenValid?: () => boolean;
 }): AuthStrategy {
   const storage = opts.storage ?? memoryStorage;
 
@@ -69,7 +68,6 @@ export function createCookieStrategy(opts: {
 export function createTokenStrategy(opts: {
   storage?: TokenStorage;
   refreshPath: string;
-  isTokenValid?: () => boolean;
 }): AuthStrategy {
   const storage = opts.storage ?? localStorageStorage;
 
