@@ -62,10 +62,7 @@ async function ensureRefreshed(signal?: AbortSignal) {
       try {
         await auth.refresh(signal);
       } finally {
-        // Reset promise regardless of success/failure
-        const p = refreshPromise;
         refreshPromise = null;
-        await (p as Promise<void> | null)?.catch(() => undefined);
       }
     })();
   }
