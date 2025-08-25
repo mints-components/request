@@ -36,7 +36,7 @@ export interface GlobalRequestConfig {
 
 const globalConfig: GlobalRequestConfig = {
   retryAfterRefresh: 1,
-  shouldRefreshOnStatus: (s) => s === 401,
+  shouldRefreshOnStatus: (s) => s === 401 || s === 419 || s === 440,
 };
 
 export const setupRequest = (config: GlobalRequestConfig) => {
