@@ -59,8 +59,8 @@
     ]
   },
   "peerDependencies": {
-    "axios": "^1.11.0",
-    "react": "^18"
+    "axios": ">=1",
+    "react": ">=18"
   },
   "peerDependenciesMeta": {
     "react": {
