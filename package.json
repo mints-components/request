@@ -1,6 +1,6 @@
 {
   "name": "@mints/request",
-  "packageManager": "yarn@4.9.2",
+  "packageManager": "pnpm@10.16.1",
   "version": "2.1.0",
   "type": "module",
   "description": "A lightweight Axios + operation wrapper with global config and toast integration",
@@ -43,8 +43,8 @@
     "clean": "rm -rf dist",
     "lint": "eslint . --fix",
     "prettier": "prettier . --write",
-    "prepublish": "yarn build",
-    "publish": "yarn npm publish --access public",
+    "prepublish": "pnpm build",
+    "publish": "pnpm publish --access public",
     "prepare": "husky install",
     "prepack": "pinst --disable",
     "postpack": "pinst --enable"
