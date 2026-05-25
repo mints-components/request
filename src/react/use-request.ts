@@ -71,7 +71,9 @@ export function useRequest<T, E = unknown>(
 
   useEffect(() => {
     if (!opts?.lazy) {
-      run();
+      // Swallow the rejection here — the error is already captured in state.
+      // Callers who need to catch errors should use lazy mode and call run() directly.
+      run().catch(() => {});
       return () => abortRef.current?.abort();
     }
   }, [run]);
