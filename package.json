@@ -47,7 +47,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "prepublish": "pnpm build",
-    "publish": "pnpm publish --access public",
+    "release": "pnpm publish --access public",
     "prepare": "husky install",
     "prepack": "pinst --disable",
     "postpack": "pinst --enable"
