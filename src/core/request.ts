@@ -171,7 +171,12 @@ request.public = async function <T = unknown>(
   url: string,
   config?: AxiosRequestConfig & PublicOptions,
 ): Promise<T> {
-  const withCredentials = config?.credentials === 'always' ? true : undefined;
+  const withCredentials =
+    config?.credentials === 'always'
+      ? true
+      : config?.credentials === 'never'
+        ? false
+        : undefined;
   return baseRequest<T>(url, {
     ...config,
     withCredentials,
@@ -188,7 +193,12 @@ request.auth = async function <T = unknown>(
   url: string,
   config?: AxiosRequestConfig & AuthOptions,
 ): Promise<T> {
-  const withCredentials = config?.credentials === 'always' ? true : undefined;
+  const withCredentials =
+    config?.credentials === 'always'
+      ? true
+      : config?.credentials === 'never'
+        ? false
+        : undefined;
   return baseRequest<T>(url, {
     ...config,
     withCredentials,
