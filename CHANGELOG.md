@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.2.0] - 2026-05-25
+
+### 🐛 Fixes
+
+- Fixed `retryAfterRefresh: 0` being ignored — setting it to `0` now correctly disables all retries after a token refresh (previously `Math.max(1, ...)` enforced a minimum of 1).
+- Fixed `credentials: 'never'` having no effect — it now explicitly sets `withCredentials: false` on both `request.public` and `request.auth`.
+- Fixed unhandled promise rejection in `useRequest` auto-run mode — errors are already captured in `error` state, so the rejection from the internal `run()` call is now swallowed at the effect level.
+- Fixed `axios` being listed in both `dependencies` and `peerDependencies`, which could cause duplicate instances in consumer bundles. It is now only in `peerDependencies` (and `devDependencies` locally).
+
+### 🧪 Tests
+
+- Added a full test suite with **vitest** + **MSW**: covers `request`, `operator`, and `useRequest` across 50 cases including concurrent refresh deduplication, race condition protection, and soft-refresh lifecycle.
+
 ## [2.1.0] - 2025-08-25
 
 ⚠️ **Note:** version `2.0.0` was essentially broken due to severe bugs.  

@@ -1,7 +1,7 @@
 {
   "name": "@mints/request",
   "packageManager": "pnpm@10.16.1",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "type": "module",
   "description": "A lightweight Axios + operation wrapper with global config and toast integration",
   "keywords": [
