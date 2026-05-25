@@ -79,7 +79,7 @@ async function retryOnce<T>(
   original: InternalAxiosRequestConfig,
 ): Promise<AxiosResponse<T>> {
   const global = getGlobalRequestConfig();
-  const retryMax = Math.max(1, global.retryAfterRefresh ?? 1);
+  const retryMax = Math.max(0, global.retryAfterRefresh ?? 1);
 
   const meta = original.meta || (original.meta = {});
   const count = meta._retried ?? 0;
